@@ -22,9 +22,6 @@ function extractCbValue(payload: unknown): number | null {
 }
 
 export function BankingPage() {
-    const [shipId, setShipId] = useState("");
-    const [year, setYear] = useState(2025);
-    const [amount, setAmount] = useState<number | "">("");
     const [currentCb, setCurrentCb] = useState<number | null>(null);
     const [result, setResult] = useState<BankingResult | null>(null);
     const [loading, setLoading] = useState(false);
@@ -35,7 +32,7 @@ export function BankingPage() {
         setError(null);
 
         try {
-            const data = await getComplianceCb({ shipId: shipId || undefined, year });
+            const data = await getComplianceCb();
             const cbValue = extractCbValue(data);
 
             if (cbValue === null) {
@@ -55,11 +52,7 @@ export function BankingPage() {
         setError(null);
 
         try {
-            const data = await bankSurplus({
-                shipId: shipId || undefined,
-                year,
-                amount: amount === "" ? undefined : amount
-            });
+            const data = await bankSurplus();
             setResult(data);
             setCurrentCb(data.cb_after);
         } catch (requestError) {
@@ -74,11 +67,7 @@ export function BankingPage() {
         setError(null);
 
         try {
-            const data = await applyBanked({
-                shipId: shipId || undefined,
-                year,
-                amount: amount === "" ? undefined : amount
-            });
+            const data = await applyBanked();
             setResult(data);
             setCurrentCb(data.cb_after);
         } catch (requestError) {
@@ -93,28 +82,6 @@ export function BankingPage() {
     return (
         <section>
             <h2 className="text-xl font-semibold text-slate-900">Banking</h2>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <input
-                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
-                    placeholder="Ship ID (optional)"
-                    value={shipId}
-                    onChange={(event) => setShipId(event.target.value)}
-                />
-                <input
-                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
-                    type="number"
-                    value={year}
-                    onChange={(event) => setYear(Number(event.target.value))}
-                />
-                <input
-                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
-                    type="number"
-                    placeholder="Amount (optional)"
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value === "" ? "" : Number(event.target.value))}
-                />
-            </div>
 
             <div className="mt-3 flex gap-2">
                 <button
