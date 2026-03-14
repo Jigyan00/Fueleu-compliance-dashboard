@@ -115,7 +115,7 @@ export function RoutesPage() {
                             <th className="px-3 py-2">fuelConsumption</th>
                             <th className="px-3 py-2">distance</th>
                             <th className="px-3 py-2">totalEmissions</th>
-                            <th className="px-3 py-2">baseline</th>
+                            <th className="px-3 py-2">action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,7 +135,7 @@ export function RoutesPage() {
                                         disabled={route.isBaseline}
                                         onClick={() => void handleSetBaseline(route.routeId)}
                                     >
-                                        {route.isBaseline ? "Baseline" : "Set Baseline"}
+                                        Set Baseline
                                     </button>
                                 </td>
                             </tr>
