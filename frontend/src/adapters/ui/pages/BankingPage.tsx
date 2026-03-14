@@ -1,0 +1,163 @@
+import { useState } from "react";
+import type { BankingResult } from "../../../core/domain/models";
+import { applyBanked, bankSurplus, getComplianceCb } from "../../infrastructure/httpClient";
+
+function extractCbValue(payload: unknown): number | null {
+    if (typeof payload === "number") {
+        return payload;
+    }
+
+    if (typeof payload === "object" && payload !== null) {
+        const record = payload as Record<string, unknown>;
+        const candidates = [record.cbValue, record.cb_gco2eq, record.cb, record.value];
+
+        for (const candidate of candidates) {
+            if (typeof candidate === "number") {
+                return candidate;
+            }
+        }
+    }
+
+    return null;
+}
+
+export function BankingPage() {
+    const [shipId, setShipId] = useState("");
+    const [year, setYear] = useState(2025);
+    const [amount, setAmount] = useState<number | "">("");
+    const [currentCb, setCurrentCb] = useState<number | null>(null);
+    const [result, setResult] = useState<BankingResult | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleFetchCb() {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await getComplianceCb({ shipId: shipId || undefined, year });
+            const cbValue = extractCbValue(data);
+
+            if (cbValue === null) {
+                throw new Error("Invalid CB response format");
+            }
+
+            setCurrentCb(cbValue);
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to fetch CB");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleBank() {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await bankSurplus({
+                shipId: shipId || undefined,
+                year,
+                amount: amount === "" ? undefined : amount
+            });
+            setResult(data);
+            setCurrentCb(data.cb_after);
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to bank surplus");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleApply() {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await applyBanked({
+                shipId: shipId || undefined,
+                year,
+                amount: amount === "" ? undefined : amount
+            });
+            setResult(data);
+            setCurrentCb(data.cb_after);
+        } catch (requestError) {
+            setError(requestError instanceof Error ? requestError.message : "Failed to apply banked amount");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const actionsDisabled = currentCb === null || currentCb <= 0 || loading;
+
+    return (
+        <section>
+            <h2 className="text-xl font-semibold text-slate-900">Banking</h2>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <input
+                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                    placeholder="Ship ID (optional)"
+                    value={shipId}
+                    onChange={(event) => setShipId(event.target.value)}
+                />
+                <input
+                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                    type="number"
+                    value={year}
+                    onChange={(event) => setYear(Number(event.target.value))}
+                />
+                <input
+                    className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
+                    type="number"
+                    placeholder="Amount (optional)"
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value === "" ? "" : Number(event.target.value))}
+                />
+            </div>
+
+            <div className="mt-3 flex gap-2">
+                <button
+                    className="rounded bg-slate-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+                    onClick={() => void handleFetchCb()}
+                    disabled={loading}
+                >
+                    Fetch CB
+                </button>
+                <button
+                    className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+                    onClick={() => void handleBank()}
+                    disabled={actionsDisabled}
+                >
+                    Bank Surplus
+                </button>
+                <button
+                    className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+                    onClick={() => void handleApply()}
+                    disabled={actionsDisabled}
+                >
+                    Apply Banked
+                </button>
+            </div>
+
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="rounded border border-slate-200 bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">cb_before</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.cb_before ?? "-"}</p>
+                </div>
+                <div className="rounded border border-slate-200 bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">applied</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.applied ?? "-"}</p>
+                </div>
+                <div className="rounded border border-slate-200 bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">cb_after</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.cb_after ?? "-"}</p>
+                </div>
+            </div>
+
+            <p className="mt-3 text-sm text-slate-600">Current CB: {currentCb ?? "Not loaded"}</p>
+        </section>
+    );
+}
