@@ -20,13 +20,24 @@ function normalizePoolMembers(payload: unknown): PoolMember[] {
 export function PoolingPage() {
     const [year, setYear] = useState(2025);
     const [members, setMembers] = useState<AdjustedCbShip[]>([]);
+    const [selectedShipIds, setSelectedShipIds] = useState<string[]>([]);
     const [poolMembers, setPoolMembers] = useState<PoolMember[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const selectedMembers = useMemo(
+        () => members.filter((member) => selectedShipIds.includes(member.shipId)),
+        [members, selectedShipIds]
+    );
+
     const poolSum = useMemo(
-        () => members.reduce((sum, member) => sum + member.adjustedCB, 0),
-        [members]
+        () => selectedMembers.reduce((sum, member) => sum + member.adjustedCB, 0),
+        [selectedMembers]
+    );
+
+    const memberResultById = useMemo(
+        () => new Map(poolMembers.map((member) => [member.shipId, member])),
+        [poolMembers]
     );
 
     async function handleLoadAdjustedCb() {
@@ -36,6 +47,7 @@ export function PoolingPage() {
         try {
             const data = await getAdjustedCb(year);
             setMembers(data);
+            setSelectedShipIds(data.map((member) => member.shipId));
             setPoolMembers([]);
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to fetch adjusted CB");
@@ -49,7 +61,7 @@ export function PoolingPage() {
         setError(null);
 
         try {
-            const data = await createPool({ year, members });
+            const data = await createPool({ year, members: selectedMembers });
             setPoolMembers(normalizePoolMembers(data));
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to create pool");
@@ -58,7 +70,15 @@ export function PoolingPage() {
         }
     }
 
-    const createDisabled = loading || members.length === 0 || poolSum < 0;
+    function toggleShipSelection(shipId: string) {
+        setSelectedShipIds((current) =>
+            current.includes(shipId)
+                ? current.filter((id) => id !== shipId)
+                : [...current, shipId]
+        );
+    }
+
+    const createDisabled = loading || selectedMembers.length === 0 || poolSum < 0;
 
     return (
         <section>
@@ -100,26 +120,37 @@ export function PoolingPage() {
                 <table className="min-w-full text-left text-sm">
                     <thead className="bg-slate-100 text-slate-700">
                         <tr>
+                            <th className="px-3 py-2">select</th>
                             <th className="px-3 py-2">shipId</th>
+                            <th className="px-3 py-2">adjustedCB</th>
                             <th className="px-3 py-2">cb_before</th>
                             <th className="px-3 py-2">cb_after</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {(poolMembers.length > 0
-                            ? poolMembers
-                            : members.map((member) => ({
-                                shipId: member.shipId,
-                                cb_before: member.adjustedCB,
-                                cb_after: member.adjustedCB
-                            }))
-                        ).map((member) => (
-                            <tr key={member.shipId} className="border-t border-slate-200">
-                                <td className="px-3 py-2">{member.shipId}</td>
-                                <td className="px-3 py-2">{member.cb_before}</td>
-                                <td className="px-3 py-2">{member.cb_after}</td>
-                            </tr>
-                        ))}
+                        {members.map((member) => {
+                            const memberResult = memberResultById.get(member.shipId);
+                            const cbBefore = memberResult?.cb_before ?? member.adjustedCB;
+                            const cbAfter = memberResult?.cb_after ?? member.adjustedCB;
+                            const isSelected = selectedShipIds.includes(member.shipId);
+
+                            return (
+                                <tr key={member.shipId} className="border-t border-slate-200">
+                                    <td className="px-3 py-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleShipSelection(member.shipId)}
+                                            disabled={loading}
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2">{member.shipId}</td>
+                                    <td className="px-3 py-2">{member.adjustedCB}</td>
+                                    <td className="px-3 py-2">{cbBefore}</td>
+                                    <td className="px-3 py-2">{cbAfter}</td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
