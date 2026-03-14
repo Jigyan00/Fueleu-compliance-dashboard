@@ -15,3 +15,4 @@ export class BankEntry {
         this.amount = props.amount;
     }
 }
+
