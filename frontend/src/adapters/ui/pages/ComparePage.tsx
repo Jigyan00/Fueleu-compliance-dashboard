@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { ComparisonRow, RoutesComparison } from "../../../core/domain/models";
 import { getRoutesComparison } from "../../infrastructure/httpClient";
 
@@ -35,6 +36,15 @@ export function ComparePage() {
         return [comparison.baseline, ...comparison.comparisons];
     }, [comparison]);
 
+    const chartData = useMemo(
+        () =>
+            rows.map((row) => ({
+                routeId: row.routeId,
+                ghgIntensity: row.ghgIntensity
+            })),
+        [rows]
+    );
+
     return (
         <section>
             <h2 className="text-xl font-semibold text-slate-900">Compare</h2>
@@ -59,15 +69,28 @@ export function ComparePage() {
                                 <td className="px-3 py-2">{row.routeId}</td>
                                 <td className="px-3 py-2">{row.ghgIntensity.toFixed(4)}</td>
                                 <td className="px-3 py-2">{row.percentDiff.toFixed(2)}%</td>
-                                <td className="px-3 py-2">{row.compliant ? "✅" : "❌"}</td>
+                                <td className={`px-3 py-2 font-medium ${row.compliant ? "text-emerald-600" : "text-red-600"}`}>
+                                    {row.compliant ? "✅" : "❌"}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
-            <div className="mt-4 rounded border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-600">
-                Chart section intentionally deferred for a later stage.
+            <div className="mt-4 rounded border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-800">GHG Intensity Comparison</h3>
+                <div className="mt-3 h-72 text-slate-900">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="routeId" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="ghgIntensity" fill="currentColor" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
         </section>
     );
