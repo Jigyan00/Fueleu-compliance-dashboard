@@ -25,11 +25,21 @@ export class BankingController {
     router(): Router {
         const router = Router();
 
+        router.get("/banking/available", this.getAvailableBank.bind(this));
         router.get("/banking/records", this.getRecords.bind(this));
         router.post("/banking/bank", this.bank.bind(this));
         router.post("/banking/apply", this.apply.bind(this));
 
         return router;
+    }
+
+    private getAvailableBank(_req: Request, res: Response) {
+        try {
+            const result = this.bankingService.getAvailableBank();
+            res.status(200).json(result);
+        } catch {
+            res.status(500).json({ message: "Unexpected error" });
+        }
     }
 
     private bank(req: Request, res: Response) {

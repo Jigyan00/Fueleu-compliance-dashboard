@@ -21,8 +21,9 @@ export function getRoutesComparison() {
     return requestJson<RoutesComparison>("/routes/comparison");
 }
 
-export function getComplianceCb() {
-    return requestJson<unknown>("/compliance/cb");
+export function getComplianceCb(year?: number) {
+    const query = typeof year === "number" ? `?year=${encodeURIComponent(String(year))}` : "";
+    return requestJson<unknown>(`/compliance/cb${query}`);
 }
 
 export function bankSurplus(payload?: { shipId?: string; year?: number; amount?: number }) {
@@ -37,6 +38,10 @@ export function applyBanked(payload?: { shipId?: string; year?: number; amount?:
         method: "POST",
         body: JSON.stringify(payload ?? {})
     });
+}
+
+export function getAvailableBank() {
+    return requestJson<{ amount_gco2eq: number }>("/banking/available");
 }
 
 export function getAdjustedCb(year: number) {

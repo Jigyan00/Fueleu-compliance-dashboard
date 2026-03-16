@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BankingResult } from "../../../core/domain/models";
-import { applyBanked, bankSurplus, getComplianceCb } from "../../infrastructure/httpClient";
+import { applyBanked, bankSurplus, getAvailableBank, getComplianceCb } from "../../infrastructure/httpClient";
 import { formatCbTonnes } from "../../../shared";
 
 type ComplianceResponse = {
@@ -33,19 +33,26 @@ function extractCompliance(payload: unknown): ComplianceResponse | null {
 }
 
 export function BankingPage() {
+    const [selectedYear, setSelectedYear] = useState<number>(2024);
     const [currentCb, setCurrentCb] = useState<number | null>(null);
     const [currentShipId, setCurrentShipId] = useState<string | null>(null);
     const [currentYear, setCurrentYear] = useState<number | null>(null);
     const [result, setResult] = useState<BankingResult | null>(null);
+    const [availableBank, setAvailableBank] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    async function refreshAvailableBank() {
+        const snapshot = await getAvailableBank();
+        setAvailableBank(snapshot.amount_gco2eq);
+    }
 
     async function handleFetchCb() {
         setLoading(true);
         setError(null);
 
         try {
-            const data = await getComplianceCb();
+            const data = await getComplianceCb(selectedYear);
             const compliance = extractCompliance(data);
 
             if (compliance === null) {
@@ -55,6 +62,7 @@ export function BankingPage() {
             setCurrentCb(compliance.cbValue);
             setCurrentShipId(compliance.shipId ?? null);
             setCurrentYear(compliance.year ?? null);
+            await refreshAvailableBank();
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to fetch CB");
         } finally {
@@ -69,10 +77,11 @@ export function BankingPage() {
         try {
             const data = await bankSurplus({
                 shipId: currentShipId ?? undefined,
-                year: currentYear ?? undefined
+                year: currentYear ?? selectedYear
             });
             setResult(data);
             setCurrentCb(data.cb_after);
+            await refreshAvailableBank();
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to bank surplus");
         } finally {
@@ -87,10 +96,11 @@ export function BankingPage() {
         try {
             const data = await applyBanked({
                 shipId: currentShipId ?? undefined,
-                year: currentYear ?? undefined
+                year: currentYear ?? selectedYear
             });
             setResult(data);
             setCurrentCb(data.cb_after);
+            await refreshAvailableBank();
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to apply banked amount");
         } finally {
@@ -103,11 +113,24 @@ export function BankingPage() {
     }, []);
 
     const bankDisabled = currentCb === null || currentCb <= 0 || loading;
-    const applyDisabled = currentCb === null || currentCb >= 0 || loading;
+    const applyDisabled = currentCb === null || currentCb >= 0 || availableBank <= 0 || loading;
 
     return (
         <section>
             <h2 className="text-xl font-semibold text-slate-900">Banking</h2>
+
+            <div className="mt-3 w-52">
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Year</label>
+                <select
+                    className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                    value={selectedYear}
+                    onChange={(event) => setSelectedYear(Number(event.target.value))}
+                    disabled={loading}
+                >
+                    <option value={2024}>2024</option>
+                    <option value={2025}>2025</option>
+                </select>
+            </div>
 
             <div className="mt-3 flex gap-2">
                 <button
@@ -151,6 +174,10 @@ export function BankingPage() {
             </div>
 
             <p className="mt-3 text-sm text-slate-600">Current CB: {currentCb === null ? "Not loaded" : formatCbTonnes(currentCb)}</p>
+            <p className="mt-1 text-sm text-slate-600">Available Banked Surplus: {formatCbTonnes(availableBank)}</p>
+            <p className="mt-1 text-xs text-slate-500">
+                Context: {currentShipId ?? "-"} / {currentYear ?? selectedYear}
+            </p>
         </section>
     );
 }

@@ -14,6 +14,10 @@ export type BankingRecord = {
     amount_gco2eq: number;
 };
 
+export type AvailableBankSnapshot = {
+    amount_gco2eq: number;
+};
+
 const GLOBAL_BANK_KEY = "__global__";
 
 export class BankingService {
@@ -66,6 +70,14 @@ export class BankingService {
         this.bankLedger.set(GLOBAL_BANK_KEY, availableBank - result.applied);
 
         return result;
+    }
+
+    getAvailableBank(): AvailableBankSnapshot {
+        const availableBank = this.bankLedger.get(GLOBAL_BANK_KEY) ?? 0;
+
+        return {
+            amount_gco2eq: Math.max(0, availableBank)
+        };
     }
 
     getRecords(request: Pick<BankingRequest, "shipId" | "year">): BankingRecord[] {
