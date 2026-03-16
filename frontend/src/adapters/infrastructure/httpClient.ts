@@ -25,15 +25,17 @@ export function getComplianceCb() {
     return requestJson<unknown>("/compliance/cb");
 }
 
-export function bankSurplus() {
+export function bankSurplus(payload?: { shipId?: string; year?: number; amount?: number }) {
     return requestJson<BankingResult>("/banking/bank", {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify(payload ?? {})
     });
 }
 
-export function applyBanked() {
+export function applyBanked(payload?: { shipId?: string; year?: number; amount?: number }) {
     return requestJson<BankingResult>("/banking/apply", {
-        method: "POST"
+        method: "POST",
+        body: JSON.stringify(payload ?? {})
     });
 }
 

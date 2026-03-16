@@ -2,9 +2,8 @@ import request from "supertest";
 import { createApp } from "../src/infrastructure/server/app";
 
 describe("HTTP integration", () => {
-    const app = createApp();
-
     it("returns seeded routes", async () => {
+        const app = createApp();
         const response = await request(app).get("/routes");
 
         expect(response.status).toBe(200);
@@ -14,6 +13,7 @@ describe("HTTP integration", () => {
     });
 
     it("updates baseline route", async () => {
+        const app = createApp();
         const response = await request(app).post("/routes/R004/baseline");
 
         expect(response.status).toBe(200);
@@ -27,6 +27,7 @@ describe("HTTP integration", () => {
     });
 
     it("returns bank records after banking", async () => {
+        const app = createApp();
         const bank = await request(app).post("/banking/bank").send({ year: 2024 });
 
         expect(bank.status).toBe(200);
@@ -39,5 +40,18 @@ describe("HTTP integration", () => {
         expect(records.body[0]).toHaveProperty("shipId");
         expect(records.body[0]).toHaveProperty("year");
         expect(records.body[0]).toHaveProperty("amount_gco2eq");
+    });
+
+    it("does not allow rebanking the same ship surplus after it reaches zero", async () => {
+        const app = createApp();
+        const first = await request(app).post("/banking/bank").send({ shipId: "R002", year: 2024 });
+
+        expect(first.status).toBe(200);
+        expect(first.body.cb_after).toBe(0);
+
+        const second = await request(app).post("/banking/bank").send({ shipId: "R002", year: 2024 });
+
+        expect(second.status).toBe(400);
+        expect(second.body.message).toBe("BANKING_REQUIRES_POSITIVE_CB");
     });
 });

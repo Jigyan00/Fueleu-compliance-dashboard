@@ -3,9 +3,15 @@ import type { BankingResult } from "../../../core/domain/models";
 import { applyBanked, bankSurplus, getComplianceCb } from "../../infrastructure/httpClient";
 import { formatCbTonnes } from "../../../shared";
 
-function extractCbValue(payload: unknown): number | null {
+type ComplianceResponse = {
+    shipId?: string;
+    year?: number;
+    cbValue: number;
+};
+
+function extractCompliance(payload: unknown): ComplianceResponse | null {
     if (typeof payload === "number") {
-        return payload;
+        return { cbValue: payload };
     }
 
     if (typeof payload === "object" && payload !== null) {
@@ -14,7 +20,11 @@ function extractCbValue(payload: unknown): number | null {
 
         for (const candidate of candidates) {
             if (typeof candidate === "number") {
-                return candidate;
+                return {
+                    shipId: typeof record.shipId === "string" ? record.shipId : undefined,
+                    year: typeof record.year === "number" ? record.year : undefined,
+                    cbValue: candidate
+                };
             }
         }
     }
@@ -24,6 +34,8 @@ function extractCbValue(payload: unknown): number | null {
 
 export function BankingPage() {
     const [currentCb, setCurrentCb] = useState<number | null>(null);
+    const [currentShipId, setCurrentShipId] = useState<string | null>(null);
+    const [currentYear, setCurrentYear] = useState<number | null>(null);
     const [result, setResult] = useState<BankingResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,13 +46,15 @@ export function BankingPage() {
 
         try {
             const data = await getComplianceCb();
-            const cbValue = extractCbValue(data);
+            const compliance = extractCompliance(data);
 
-            if (cbValue === null) {
+            if (compliance === null) {
                 throw new Error("Invalid CB response format");
             }
 
-            setCurrentCb(cbValue);
+            setCurrentCb(compliance.cbValue);
+            setCurrentShipId(compliance.shipId ?? null);
+            setCurrentYear(compliance.year ?? null);
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to fetch CB");
         } finally {
@@ -53,7 +67,10 @@ export function BankingPage() {
         setError(null);
 
         try {
-            const data = await bankSurplus();
+            const data = await bankSurplus({
+                shipId: currentShipId ?? undefined,
+                year: currentYear ?? undefined
+            });
             setResult(data);
             setCurrentCb(data.cb_after);
         } catch (requestError) {
@@ -68,7 +85,10 @@ export function BankingPage() {
         setError(null);
 
         try {
-            const data = await applyBanked();
+            const data = await applyBanked({
+                shipId: currentShipId ?? undefined,
+                year: currentYear ?? undefined
+            });
             setResult(data);
             setCurrentCb(data.cb_after);
         } catch (requestError) {
@@ -83,7 +103,7 @@ export function BankingPage() {
     }, []);
 
     const bankDisabled = currentCb === null || currentCb <= 0 || loading;
-    const applyDisabled = currentCb === null || loading;
+    const applyDisabled = currentCb === null || currentCb >= 0 || loading;
 
     return (
         <section>

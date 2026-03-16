@@ -49,11 +49,11 @@ export class ComplianceService {
 
         const candidates = routes.map((route) => {
             const baseCb = this.computeRouteCb(route);
-            const banked = this.bankLedger.get(route.routeId) ?? 0;
+            const netAdjustment = this.bankLedger.get(route.routeId) ?? 0;
 
             return {
                 route,
-                adjustedCb: baseCb + banked
+                adjustedCb: baseCb + netAdjustment
             };
         });
 
@@ -125,6 +125,12 @@ export class ComplianceService {
             }
 
             return selected;
+        }
+
+        const baselineRoute = routes.find((route) => route.isBaseline);
+
+        if (baselineRoute) {
+            return baselineRoute;
         }
 
         const sorted = [...routes].sort((left, right) => this.computeRouteCb(right) - this.computeRouteCb(left));

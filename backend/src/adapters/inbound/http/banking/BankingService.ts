@@ -36,8 +36,8 @@ export class BankingService {
             amountToBank: request.amount
         });
 
-        const available = this.bankLedger.get(compliance.shipId) ?? 0;
-        this.bankLedger.set(compliance.shipId, available + result.applied);
+        const netAdjustment = this.bankLedger.get(compliance.shipId) ?? 0;
+        this.bankLedger.set(compliance.shipId, netAdjustment - result.applied);
 
         const globalAvailable = this.bankLedger.get(GLOBAL_BANK_KEY) ?? 0;
         this.bankLedger.set(GLOBAL_BANK_KEY, globalAvailable + result.applied);
@@ -75,11 +75,13 @@ export class BankingService {
                 year: request.year
             });
 
+            const netAdjustment = this.bankLedger.get(request.shipId) ?? 0;
+
             return [
                 {
                     shipId: request.shipId,
                     year: compliance.year,
-                    amount_gco2eq: this.bankLedger.get(request.shipId) ?? 0
+                    amount_gco2eq: Math.max(0, -netAdjustment)
                 }
             ];
         }
@@ -98,7 +100,7 @@ export class BankingService {
                 return {
                     shipId: item.shipId,
                     year,
-                    amount_gco2eq: this.bankLedger.get(item.shipId) ?? 0
+                    amount_gco2eq: Math.max(0, -(this.bankLedger.get(item.shipId) ?? 0))
                 };
             })
             .filter((record) => record.amount_gco2eq > 0);

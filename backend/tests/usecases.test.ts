@@ -179,13 +179,13 @@ describe("CreatePool", () => {
 });
 
 describe("ComplianceService", () => {
-    it("selects highest-CB route by default instead of baseline", () => {
+    it("selects baseline route by default", () => {
         const routesService = new RoutesService();
         const complianceService = new ComplianceService(routesService, new Map<string, number>());
 
         const result = complianceService.getComplianceCb({ year: 2024 });
 
-        expect(result.shipId).toBe("R002");
-        expect(result.cbValue).toBeGreaterThan(0);
+        expect(result.shipId).toBe("R001");
+        expect(result.cbValue).toBeLessThan(0);
     });
 });
