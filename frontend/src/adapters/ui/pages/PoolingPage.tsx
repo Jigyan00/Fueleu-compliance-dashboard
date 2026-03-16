@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AdjustedCbShip, PoolMember } from "../../../core/domain/models";
 import { createPool, getAdjustedCb } from "../../infrastructure/httpClient";
+import { formatCbTonnes } from "../../../shared";
 
 function normalizePoolMembers(payload: unknown): PoolMember[] {
     if (Array.isArray(payload)) {
@@ -115,7 +116,7 @@ export function PoolingPage() {
                 className={`mt-4 inline-block rounded px-3 py-1 text-sm font-medium ${poolSum >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                     }`}
             >
-                Pool Sum: {poolSum.toFixed(2)}
+                Pool Sum: {formatCbTonnes(poolSum)}
             </div>
 
             {selectedMembers.length > 0 && poolSum < 0 && (
@@ -153,9 +154,9 @@ export function PoolingPage() {
                                         />
                                     </td>
                                     <td className="px-3 py-2">{member.shipId}</td>
-                                    <td className="px-3 py-2">{member.adjustedCB}</td>
-                                    <td className="px-3 py-2">{cbBefore}</td>
-                                    <td className="px-3 py-2">{cbAfter}</td>
+                                    <td className="px-3 py-2">{formatCbTonnes(member.adjustedCB)}</td>
+                                    <td className="px-3 py-2">{formatCbTonnes(cbBefore)}</td>
+                                    <td className="px-3 py-2">{formatCbTonnes(cbAfter)}</td>
                                 </tr>
                             );
                         })}

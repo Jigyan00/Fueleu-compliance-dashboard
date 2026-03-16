@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BankingResult } from "../../../core/domain/models";
 import { applyBanked, bankSurplus, getComplianceCb } from "../../infrastructure/httpClient";
+import { formatCbTonnes } from "../../../shared";
 
 function extractCbValue(payload: unknown): number | null {
     if (typeof payload === "number") {
@@ -117,19 +118,19 @@ export function BankingPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <div className="rounded border border-slate-200 bg-white p-3">
                     <p className="text-xs uppercase tracking-wide text-slate-500">cb_before</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.cb_before ?? "-"}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result ? formatCbTonnes(result.cb_before) : "-"}</p>
                 </div>
                 <div className="rounded border border-slate-200 bg-white p-3">
                     <p className="text-xs uppercase tracking-wide text-slate-500">applied</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.applied ?? "-"}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result ? formatCbTonnes(result.applied) : "-"}</p>
                 </div>
                 <div className="rounded border border-slate-200 bg-white p-3">
                     <p className="text-xs uppercase tracking-wide text-slate-500">cb_after</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">{result?.cb_after ?? "-"}</p>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">{result ? formatCbTonnes(result.cb_after) : "-"}</p>
                 </div>
             </div>
 
-            <p className="mt-3 text-sm text-slate-600">Current CB: {currentCb ?? "Not loaded"}</p>
+            <p className="mt-3 text-sm text-slate-600">Current CB: {currentCb === null ? "Not loaded" : formatCbTonnes(currentCb)}</p>
         </section>
     );
 }
