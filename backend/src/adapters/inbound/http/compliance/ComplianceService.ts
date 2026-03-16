@@ -31,7 +31,9 @@ export class ComplianceService {
     getComplianceCb(request: ComplianceRequest): ComplianceSnapshot {
         const routes = this.filterRoutesByYear(request.year);
         const selectedRoute = this.selectRoute(routes, request.shipId);
-        const cbValue = this.computeRouteCb(selectedRoute);
+        const baseCb = this.computeRouteCb(selectedRoute);
+        const netAdjustment = this.bankLedger.get(selectedRoute.routeId) ?? 0;
+        const cbValue = baseCb + netAdjustment;
 
         return {
             shipId: selectedRoute.routeId,

@@ -54,4 +54,20 @@ describe("HTTP integration", () => {
         expect(second.status).toBe(400);
         expect(second.body.message).toBe("BANKING_REQUIRES_POSITIVE_CB");
     });
+
+    it("returns adjusted compliance CB after banking for the same ship", async () => {
+        const app = createApp();
+
+        const before = await request(app).get("/compliance/cb").query({ shipId: "R002", year: 2024 });
+        expect(before.status).toBe(200);
+        expect(before.body.cbValue).toBeGreaterThan(0);
+
+        const bank = await request(app).post("/banking/bank").send({ shipId: "R002", year: 2024 });
+        expect(bank.status).toBe(200);
+        expect(bank.body.cb_after).toBe(0);
+
+        const after = await request(app).get("/compliance/cb").query({ shipId: "R002", year: 2024 });
+        expect(after.status).toBe(200);
+        expect(after.body.cbValue).toBe(0);
+    });
 });
