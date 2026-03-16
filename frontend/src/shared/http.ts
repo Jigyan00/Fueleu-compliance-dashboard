@@ -1,4 +1,14 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+
+function normalizeBaseUrl(baseUrl: string): string {
+    return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
+function buildUrl(path: string): string {
+    const normalizedBaseUrl = normalizeBaseUrl(API_BASE_URL);
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return `${normalizedBaseUrl}${normalizedPath}`;
+}
 
 function getErrorMessage(payload: unknown): string | null {
     if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -12,13 +22,20 @@ function getErrorMessage(payload: unknown): string | null {
 }
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        headers: {
-            "Content-Type": "application/json",
-            ...(init?.headers ?? {})
-        },
-        ...init
-    });
+    const url = buildUrl(path);
+    let response: Response;
+
+    try {
+        response = await fetch(url, {
+            headers: {
+                "Content-Type": "application/json",
+                ...(init?.headers ?? {})
+            },
+            ...init
+        });
+    } catch {
+        throw new Error(`Cannot reach API at ${url}. Ensure the backend server is running.`);
+    }
 
     let payload: unknown = null;
 

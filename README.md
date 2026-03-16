@@ -107,6 +107,9 @@ npm run dev
 
 Frontend runs on `http://localhost:5173` and calls backend on `http://localhost:4000` by default.
 
+In development, frontend API calls use `/api/*` and are proxied by Vite to `http://localhost:4000`.
+You can override this by setting `VITE_API_BASE_URL` (for example, to point to a deployed backend).
+
 ## Tests
 
 Backend unit tests:
