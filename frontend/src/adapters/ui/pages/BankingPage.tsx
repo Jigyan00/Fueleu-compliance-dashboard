@@ -82,7 +82,7 @@ export function BankingPage() {
     }, []);
 
     const bankDisabled = currentCb === null || currentCb <= 0 || loading;
-    const applyDisabled = currentCb === null || currentCb >= 0 || loading;
+    const applyDisabled = currentCb === null || loading;
 
     return (
         <section>

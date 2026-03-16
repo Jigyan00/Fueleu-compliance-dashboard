@@ -8,6 +8,8 @@ export type BankingRequest = {
     amount?: number;
 };
 
+const GLOBAL_BANK_KEY = "__global__";
+
 export class BankingService {
     private readonly bankSurplusUseCase = new BankSurplus();
     private readonly applyBankedUseCase = new ApplyBanked();
@@ -31,16 +33,21 @@ export class BankingService {
         const available = this.bankLedger.get(compliance.shipId) ?? 0;
         this.bankLedger.set(compliance.shipId, available + result.applied);
 
+        const globalAvailable = this.bankLedger.get(GLOBAL_BANK_KEY) ?? 0;
+        this.bankLedger.set(GLOBAL_BANK_KEY, globalAvailable + result.applied);
+
         return result;
     }
 
     apply(request: BankingRequest) {
-        const compliance = this.complianceService.getAdjustedComplianceCb({
-            shipId: request.shipId,
-            year: request.year
-        });
+        const compliance = request.shipId
+            ? this.complianceService.getAdjustedComplianceCb({
+                shipId: request.shipId,
+                year: request.year
+            })
+            : this.getDefaultDeficitCompliance(request);
 
-        const availableBank = this.bankLedger.get(compliance.shipId) ?? 0;
+        const availableBank = this.bankLedger.get(GLOBAL_BANK_KEY) ?? 0;
 
         const result = this.applyBankedUseCase.execute({
             cbValue: compliance.cbValue,
@@ -48,8 +55,25 @@ export class BankingService {
             amountToApply: request.amount
         });
 
-        this.bankLedger.set(compliance.shipId, availableBank - result.applied);
+        const perRouteAvailable = this.bankLedger.get(compliance.shipId) ?? 0;
+        this.bankLedger.set(compliance.shipId, perRouteAvailable + result.applied);
+        this.bankLedger.set(GLOBAL_BANK_KEY, availableBank - result.applied);
 
         return result;
+    }
+
+    private getDefaultDeficitCompliance(request: BankingRequest) {
+        const adjustedList = this.complianceService.getAdjustedCbList({
+            year: request.year
+        });
+
+        const deficitCandidate = adjustedList.reduce((best, current) =>
+            current.adjustedCB < best.adjustedCB ? current : best
+        );
+
+        return this.complianceService.getAdjustedComplianceCb({
+            shipId: deficitCandidate.shipId,
+            year: request.year
+        });
     }
 }
