@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BankingResult } from "../../../core/domain/models";
 import { applyBanked, bankSurplus, getComplianceCb } from "../../infrastructure/httpClient";
 
@@ -77,7 +77,12 @@ export function BankingPage() {
         }
     }
 
-    const actionsDisabled = currentCb === null || currentCb <= 0 || loading;
+    useEffect(() => {
+        void handleFetchCb();
+    }, []);
+
+    const bankDisabled = currentCb === null || currentCb <= 0 || loading;
+    const applyDisabled = currentCb === null || currentCb >= 0 || loading;
 
     return (
         <section>
@@ -94,14 +99,14 @@ export function BankingPage() {
                 <button
                     className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
                     onClick={() => void handleBank()}
-                    disabled={actionsDisabled}
+                    disabled={bankDisabled}
                 >
                     Bank Surplus
                 </button>
                 <button
                     className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
                     onClick={() => void handleApply()}
-                    disabled={actionsDisabled}
+                    disabled={applyDisabled}
                 >
                     Apply Banked
                 </button>
