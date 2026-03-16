@@ -67,6 +67,7 @@ frontend/src/
 - `GET /routes/comparison`
 - `GET /compliance/cb`
 - `GET /compliance/adjusted-cb`
+- `GET /banking/records`
 - `POST /banking/bank`
 - `POST /banking/apply`
 - `POST /pools`
@@ -96,6 +97,13 @@ cd backend
 npm run dev
 ```
 
+Windows PowerShell (if `npm` is blocked by execution policy):
+
+```bash
+cd backend
+npm.cmd run dev
+```
+
 Backend runs on `http://localhost:4000`.
 
 ### 3) Start frontend
@@ -105,14 +113,40 @@ cd frontend
 npm run dev
 ```
 
+Windows PowerShell alternative:
+
+```bash
+cd frontend
+npm.cmd run dev
+```
+
 Frontend runs on `http://localhost:5173` and calls backend on `http://localhost:4000` by default.
 
 In development, frontend API calls use `/api/*` and are proxied by Vite to `http://localhost:4000`.
 You can override this by setting `VITE_API_BASE_URL` (for example, to point to a deployed backend).
 
+### Troubleshooting: `Request failed with status 500` in frontend
+
+If Routes (or other tabs) show `500` while calling `/api/*`, the backend is usually not running.
+
+1. Start backend on port `4000`:
+
+```bash
+cd backend
+npm.cmd run dev
+```
+
+2. Verify health:
+
+```bash
+curl http://localhost:4000/health
+```
+
+3. Keep frontend running on `5173` so Vite proxy can forward `/api/*` to backend.
+
 ## Tests
 
-Backend unit tests:
+Backend tests:
 
 ```bash
 cd backend
@@ -125,6 +159,12 @@ Covered use cases:
 - `BankSurplus`
 - `ApplyBanked`
 - `CreatePool`
+
+Integration coverage (Supertest):
+
+- `GET /routes`
+- `POST /routes/:id/baseline`
+- `GET /banking/records`
 
 ## PostgreSQL Schema & Seeds
 
@@ -219,6 +259,20 @@ Response (sample):
 	"applied": 263082239.99999934,
 	"cb_after": 0
 }
+```
+
+### `GET /banking/records?year=2024`
+
+Response (sample):
+
+```json
+[
+	{
+		"shipId": "R002",
+		"year": 2024,
+		"amount_gco2eq": 263082239.99999934
+	}
+]
 ```
 
 ### `POST /pools`

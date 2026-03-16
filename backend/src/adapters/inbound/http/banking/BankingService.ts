@@ -8,6 +8,12 @@ export type BankingRequest = {
     amount?: number;
 };
 
+export type BankingRecord = {
+    shipId: string;
+    year: number;
+    amount_gco2eq: number;
+};
+
 const GLOBAL_BANK_KEY = "__global__";
 
 export class BankingService {
@@ -60,6 +66,42 @@ export class BankingService {
         this.bankLedger.set(GLOBAL_BANK_KEY, availableBank - result.applied);
 
         return result;
+    }
+
+    getRecords(request: Pick<BankingRequest, "shipId" | "year">): BankingRecord[] {
+        if (request.shipId) {
+            const compliance = this.complianceService.getComplianceCb({
+                shipId: request.shipId,
+                year: request.year
+            });
+
+            return [
+                {
+                    shipId: request.shipId,
+                    year: compliance.year,
+                    amount_gco2eq: this.bankLedger.get(request.shipId) ?? 0
+                }
+            ];
+        }
+
+        const adjustedList = this.complianceService.getAdjustedCbList({
+            year: request.year
+        });
+
+        return adjustedList
+            .map((item) => {
+                const year = this.complianceService.getComplianceCb({
+                    shipId: item.shipId,
+                    year: request.year
+                }).year;
+
+                return {
+                    shipId: item.shipId,
+                    year,
+                    amount_gco2eq: this.bankLedger.get(item.shipId) ?? 0
+                };
+            })
+            .filter((record) => record.amount_gco2eq > 0);
     }
 
     private getDefaultDeficitCompliance(request: BankingRequest) {

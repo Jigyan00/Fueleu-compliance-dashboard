@@ -23,6 +23,7 @@ function getErrorMessage(payload: unknown): string | null {
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     const url = buildUrl(path);
+    const normalizedBaseUrl = normalizeBaseUrl(API_BASE_URL);
     let response: Response;
 
     try {
@@ -46,6 +47,16 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
     }
 
     if (!response.ok) {
+        const hasPayloadMessage = getErrorMessage(payload) !== null;
+        const proxyBackendUnavailable =
+            normalizedBaseUrl === "/api" &&
+            [500, 502, 503, 504].includes(response.status) &&
+            !hasPayloadMessage;
+
+        if (proxyBackendUnavailable) {
+            throw new Error("Cannot reach backend at http://localhost:4000. Start backend with 'npm.cmd run dev' in /backend.");
+        }
+
         const message = getErrorMessage(payload) ?? `Request failed with status ${response.status}`;
         throw new Error(message);
     }

@@ -20,11 +20,12 @@ function parseAmount(value: unknown): number | undefined {
 }
 
 export class BankingController {
-    constructor(private readonly bankingService: BankingService) {}
+    constructor(private readonly bankingService: BankingService) { }
 
     router(): Router {
         const router = Router();
 
+        router.get("/banking/records", this.getRecords.bind(this));
         router.post("/banking/bank", this.bank.bind(this));
         router.post("/banking/apply", this.apply.bind(this));
 
@@ -43,6 +44,24 @@ export class BankingController {
         } catch (error) {
             if (error instanceof Error) {
                 res.status(400).json({ message: error.message });
+                return;
+            }
+
+            res.status(500).json({ message: "Unexpected error" });
+        }
+    }
+
+    private getRecords(req: Request, res: Response) {
+        try {
+            const result = this.bankingService.getRecords({
+                shipId: typeof req.query.shipId === "string" ? req.query.shipId : undefined,
+                year: parseYear(req.query.year)
+            });
+
+            res.status(200).json(result);
+        } catch (error) {
+            if (error instanceof Error && error.message === "ROUTE_NOT_FOUND") {
+                res.status(404).json({ message: "Route not found for banking records" });
                 return;
             }
 
