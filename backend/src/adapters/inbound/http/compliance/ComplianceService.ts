@@ -127,6 +127,12 @@ export class ComplianceService {
             return selected;
         }
 
+        const baselineRoute = routes.find((route) => route.isBaseline);
+
+        if (baselineRoute) {
+            return baselineRoute;
+        }
+
         const sorted = [...routes].sort((left, right) => this.computeRouteCb(right) - this.computeRouteCb(left));
         const selected = sorted[0];
 
