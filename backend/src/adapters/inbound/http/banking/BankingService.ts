@@ -20,7 +20,7 @@ export class BankingService {
     ) { }
 
     bank(request: BankingRequest) {
-        const compliance = this.complianceService.getComplianceCb({
+        const compliance = this.complianceService.getAdjustedComplianceCb({
             shipId: request.shipId,
             year: request.year
         });

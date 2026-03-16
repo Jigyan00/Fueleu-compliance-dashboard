@@ -159,4 +159,19 @@ describe("CreatePool", () => {
 
         expect(result).toEqual([]);
     });
+
+    it("keeps zero-balance ships non-negative after allocation", () => {
+        const useCase = new CreatePool();
+
+        const result = useCase.execute([
+            { shipId: "S1", adjustedCB: 40 },
+            { shipId: "S2", adjustedCB: -40 },
+            { shipId: "S3", adjustedCB: 0 }
+        ]);
+
+        const zeroShip = result.find((member) => member.shipId === "S3");
+
+        expect(zeroShip).toBeDefined();
+        expect(zeroShip?.cb_after).toBeGreaterThanOrEqual(0);
+    });
 });

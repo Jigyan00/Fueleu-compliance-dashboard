@@ -59,7 +59,7 @@ export class CreatePool {
                 throw new Error("DEFICIT_SHIP_CANNOT_EXIT_WORSE");
             }
 
-            if (member.cbBefore > 0 && member.cbAfter < 0) {
+            if (member.cbBefore >= 0 && member.cbAfter < 0) {
                 throw new Error("SURPLUS_SHIP_CANNOT_EXIT_NEGATIVE");
             }
         }

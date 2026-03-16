@@ -110,11 +110,13 @@
 - Ran backend unit tests (`npm test`) after core logic and API changes.
 - Ran frontend production build (`npm run build`) after UI integration work.
 - Performed endpoint smoke checks with PowerShell `Invoke-RestMethod` for routes/compliance/banking/pooling.
+- Performed late-stage rules alignment using pasted FuelEU screenshots (Annex IV formula notes + Article 20 banking + Article 21 pooling constraints).
 - Corrected issues found during validation:
 	- `tsconfig rootDir/include` mismatch for backend test config.
 	- frontend `import.meta.env` typing by adding `vite-env.d.ts`.
 	- missing backend endpoints causing dashboard runtime failures.
 	- missing CORS in backend blocking frontend requests.
+	- refined pooling post-allocation guard to treat zero/positive ships as non-deficit protected.
 
 ## Observations
 
