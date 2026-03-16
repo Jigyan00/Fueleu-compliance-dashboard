@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AdjustedCbShip, PoolMember } from "../../../core/domain/models";
 import { createPool, getAdjustedCb } from "../../infrastructure/httpClient";
 
@@ -47,7 +47,7 @@ export function PoolingPage() {
         try {
             const data = await getAdjustedCb(year);
             setMembers(data);
-            setSelectedShipIds(data.map((member) => member.shipId));
+            setSelectedShipIds(data.filter((member) => member.adjustedCB > 0).map((member) => member.shipId));
             setPoolMembers([]);
         } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Failed to fetch adjusted CB");
@@ -55,6 +55,10 @@ export function PoolingPage() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        void handleLoadAdjustedCb();
+    }, []);
 
     async function handleCreatePool() {
         setLoading(true);
@@ -113,6 +117,10 @@ export function PoolingPage() {
             >
                 Pool Sum: {poolSum.toFixed(2)}
             </div>
+
+            {selectedMembers.length > 0 && poolSum < 0 && (
+                <p className="mt-2 text-sm text-red-600">Pool sum must be non-negative. Deselect some deficit ships or add more surplus ships.</p>
+            )}
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
