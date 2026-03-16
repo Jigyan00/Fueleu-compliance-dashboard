@@ -2,6 +2,8 @@ import { ApplyBanked } from "../src/core/application/ApplyBanked";
 import { BankSurplus } from "../src/core/application/BankSurplus";
 import { ComputeComplianceBalance } from "../src/core/application/ComputeComplianceBalance";
 import { CreatePool } from "../src/core/application/CreatePool";
+import { ComplianceService } from "../src/adapters/inbound/http/compliance/ComplianceService";
+import { RoutesService } from "../src/adapters/inbound/http/routes/RoutesService";
 import { Route } from "../src/core/domain/Route";
 
 describe("ComputeComplianceBalance", () => {
@@ -173,5 +175,17 @@ describe("CreatePool", () => {
 
         expect(zeroShip).toBeDefined();
         expect(zeroShip?.cb_after).toBeGreaterThanOrEqual(0);
+    });
+});
+
+describe("ComplianceService", () => {
+    it("selects highest-CB route by default instead of baseline", () => {
+        const routesService = new RoutesService();
+        const complianceService = new ComplianceService(routesService, new Map<string, number>());
+
+        const result = complianceService.getComplianceCb({ year: 2024 });
+
+        expect(result.shipId).toBe("R002");
+        expect(result.cbValue).toBeGreaterThan(0);
     });
 });
